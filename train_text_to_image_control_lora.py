@@ -36,7 +36,8 @@ from diffusers import (
     AutoencoderKL, 
     DDPMScheduler, 
     DPMSolverMultistepScheduler, 
-    DiffusionPipeline, 
+    DiffusionPipeline,
+    UniPCMultistepScheduler, 
     UNet2DConditionModel)
 from diffusers.optimization import get_scheduler
 from diffusers.utils import check_min_version, is_wandb_available
@@ -823,7 +824,8 @@ def main():
                                 torch_dtype=weight_dtype,
                                 safety_checker=None
                             )
-                            pipeline.scheduler = DPMSolverMultistepScheduler.from_config(pipeline.scheduler.config)
+                            # pipeline.scheduler = DPMSolverMultistepScheduler.from_config(pipeline.scheduler.config)
+                            pipeline.scheduler = UniPCMultistepScheduler.from_config(pipeline.scheduler.config)
                             pipeline = pipeline.to(accelerator.device)
                             pipeline.set_progress_bar_config(disable=True)
 
@@ -882,7 +884,8 @@ def main():
                     torch_dtype=weight_dtype,
                     safety_checker=None
                 )
-                pipeline.scheduler = DPMSolverMultistepScheduler.from_config(pipeline.scheduler.config)
+                pipeline.scheduler = UniPCMultistepScheduler.from_config(pipeline.scheduler.config)
+                # pipeline.scheduler = DPMSolverMultistepScheduler.from_config(pipeline.scheduler.config)
                 pipeline = pipeline.to(accelerator.device)
                 pipeline.set_progress_bar_config(disable=True)
 
@@ -945,7 +948,8 @@ def main():
     pipeline = DiffusionPipeline.from_pretrained(
         args.pretrained_model_name_or_path, revision=args.revision, torch_dtype=weight_dtype, safety_checker=None
     )
-    pipeline.scheduler = DPMSolverMultistepScheduler.from_config(pipeline.scheduler.config)
+    pipeline.scheduler = UniPCMultistepScheduler.from_config(pipeline.scheduler.config)
+    # pipeline.scheduler = DPMSolverMultistepScheduler.from_config(pipeline.scheduler.config)
     pipeline = pipeline.to(accelerator.device)
 
     # load attention processors
