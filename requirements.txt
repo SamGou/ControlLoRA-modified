@@ -191,9 +191,9 @@ webdataset==0.2.5
 websockets==11.0.3
 werkzeug==2.3.6
 wheel==0.38.4
-xformers==0.0.20
 xxhash==3.3.0
 yapf==0.32.0
 yarl==1.9.2
 zipp==3.16.2
 open_clip_torch
+jsonlines
