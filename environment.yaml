@@ -1,0 +1,11 @@
+name: control
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8.5
+  - pip
+  - cudatoolkit=11.8.0
+  - cudnn=8.8.0.121
+  - numpy=1.23.1
