@@ -7,3 +7,4 @@ wandb/
 fscoco/
 *.ipynb
 .ipynb_checkpoints/
+*.zip

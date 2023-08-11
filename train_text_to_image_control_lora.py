@@ -559,6 +559,22 @@ def main():
             args.dataset_config_name,
             cache_dir=args.cache_dir,
         )
+
+        # elif args.dataset_name is not None:
+        # # Downloading and loading a dataset from the hub.
+        # if args.dataset_split_index is not None:
+        #   dataset = load_dataset(
+        #       args.dataset_name,
+        #       args.dataset_config_name,
+        #       cache_dir=args.cache_dir,
+        #       split=f'train[:{args.dataset_split_index}]'
+        #   )
+        # else:
+        #   dataset = load_dataset(
+        #       args.dataset_name,
+        #       args.dataset_config_name,
+        #       cache_dir=args.cache_dir,
+        #   )
     else:
         data_files = {}
         if args.train_data_dir is not None:
@@ -613,7 +629,6 @@ def main():
                 transforms.Resize(args.resolution, interpolation=transforms.InterpolationMode.BILINEAR),
                 transforms.ToTensor(),
                 transforms.Normalize([0.5], [0.5]),
-                transforms.RandomErasing(p=0.4)
             ]
         )
 
