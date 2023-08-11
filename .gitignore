@@ -8,3 +8,4 @@ fscoco/
 *.ipynb
 .ipynb_checkpoints/
 *.zip
+trained/
