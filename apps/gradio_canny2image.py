@@ -1,9 +1,9 @@
 from diffusers import utils
 from diffusers.utils import deprecation_utils
-from diffusers.models import cross_attention
+from diffusers.models import attention_processor
 utils.deprecate = lambda *arg, **kwargs: None
 deprecation_utils.deprecate = lambda *arg, **kwargs: None
-cross_attention.deprecate = lambda *arg, **kwargs: None
+attention_processor.deprecate = lambda *arg, **kwargs: None
 
 import os
 import sys
@@ -21,7 +21,7 @@ from annotator.util import resize_image, HWC3
 from annotator.canny import CannyDetector
 from diffusers.models.unet_2d_condition import UNet2DConditionModel
 from diffusers.pipelines import DiffusionPipeline
-from diffusers.schedulers import DPMSolverMultistepScheduler
+from diffusers.schedulers import DPMSolverMultistepScheduler, UniPCMultistepScheduler
 from models import ControlLoRA, ControlLoRACrossAttnProcessor
 
 apply_canny = CannyDetector()
@@ -31,11 +31,11 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 pipeline = DiffusionPipeline.from_pretrained(
     'runwayml/stable-diffusion-v1-5', safety_checker=None
 )
-pipeline.scheduler = DPMSolverMultistepScheduler.from_config(pipeline.scheduler.config)
+pipeline.scheduler = UniPCMultistepScheduler.from_config(pipeline.scheduler.config)
 pipeline = pipeline.to(device)
 unet: UNet2DConditionModel = pipeline.unet
 
-control_lora = ControlLoRA.from_pretrained('HighCWu/ControlLoRA', subfolder="sd-diffusiondb-canny-model-control-lora")
+control_lora = ControlLoRA.from_pretrained('HighCWu/ControlLoRA', subfolder="sd-diffusiondb-canny-model-control-lora") #change this to my model to run custom models 
 control_lora = control_lora.to(device)
 
 
@@ -63,6 +63,7 @@ for name in pipeline.unet.attn_processors.keys():
 unet.set_attn_processor(lora_attn_procs)
 
 
+        
 def process(input_image, prompt, a_prompt, n_prompt, num_samples, image_resolution, sample_steps, scale, seed, eta, low_threshold, high_threshold):
     with torch.no_grad():
         img = resize_image(HWC3(input_image), image_resolution)

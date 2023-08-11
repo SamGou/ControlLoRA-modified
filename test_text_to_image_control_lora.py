@@ -3,10 +3,10 @@
 
 from diffusers import utils
 from diffusers.utils import deprecation_utils
-from diffusers.models import cross_attention
+from diffusers.models import attention_processor
 utils.deprecate = lambda *arg, **kwargs: None
 deprecation_utils.deprecate = lambda *arg, **kwargs: None
-cross_attention.deprecate = lambda *arg, **kwargs: None
+attention_processor.deprecate = lambda *arg, **kwargs: None
 
 import argparse
 import logging
@@ -745,7 +745,8 @@ def main():
     pipeline = DiffusionPipeline.from_pretrained(
         args.pretrained_model_name_or_path, revision=args.revision, torch_dtype=weight_dtype, safety_checker=None
     )
-    pipeline.scheduler = DPMSolverMultistepScheduler.from_config(pipeline.scheduler.config)
+    pipeline.scheduler = UniPCMultistepScheduler.from_config(pipeline.scheduler.config)
+    # pipeline.scheduler = DPMSolverMultistepScheduler.from_config(pipeline.scheduler.config)
     pipeline = pipeline.to(accelerator.device)
 
     # load attention processors

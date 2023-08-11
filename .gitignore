@@ -4,3 +4,6 @@ data/
 HighCWu/
 samples/
 wandb/
+fscoco/
+*.ipynb
+.ipynb_checkpoints/

@@ -339,7 +339,8 @@ def get_full_repo_name(model_id: str, organization: Optional[str] = None, token:
 
 DATASET_NAME_MAPPING = {
     "HighCWu/fill50k": ("image", "guide", "text"),
-    "HighCWu/diffusiondb_2m_first_5k_canny": ("image", "guide", "text")
+    "HighCWu/diffusiondb_2m_first_5k_canny": ("image", "guide", "text"),
+    "sambob/fscoco_sketch": ("image", "guide", "text")
 }
 
 
@@ -612,6 +613,7 @@ def main():
                 transforms.Resize(args.resolution, interpolation=transforms.InterpolationMode.BILINEAR),
                 transforms.ToTensor(),
                 transforms.Normalize([0.5], [0.5]),
+                transforms.RandomErasing(p=0.4)
             ]
         )
 
