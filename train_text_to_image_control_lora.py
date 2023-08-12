@@ -688,8 +688,11 @@ def main():
     # Scheduler and math around the number of training steps.
     overrode_max_train_steps = False
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
+    print("\n\n NUM UPDATE STEPS PER EPOCH 1: %s \n\n" % num_update_steps_per_epoch)
+    print("\n\n LEN DATALOADER 1: %s \n\n" % len(train_dataloader))
     if args.max_train_steps is None:
         args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
+        print("\n\n MAX_TRAIN_STEPS 1: %s \n\n" % args.max_train_steps)
         overrode_max_train_steps = True
 
     lr_scheduler = get_scheduler(
@@ -706,11 +709,14 @@ def main():
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
+    print("\n\n NUM UPDATE STEPS PER EPOCH 2: %s \n\n" % num_update_steps_per_epoch)
+    print("\n\n LEN DATALOADER 2: %s \n\n" % len(train_dataloader))
     if overrode_max_train_steps:
         args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
+        print("\n\n MAX_TRAIN_STEPS 2: %s \n\n" % args.max_train_steps)
     # Afterwards we recalculate our number of training epochs
     args.num_train_epochs = math.ceil(args.max_train_steps / num_update_steps_per_epoch)
-
+    print("\n\n NUM TRAIN EPOCHS: %s \n\n" % args.num_train_epochs)
     # We need to initialize the trackers we use, and also store our configuration.
     # The trackers initializes automatically on the main process.
     if accelerator.is_main_process:
