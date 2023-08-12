@@ -634,7 +634,7 @@ def main():
 
         def preprocess_train(examples):
             images, guides = [], []
-            for image, guide in zip(examples[image_column], examples[guide_column]):
+            for image, guide,text in zip(examples[image_column], examples[guide_column],examples[caption_column]):
                 image, guide = image.convert("RGB"), guide.convert("RGB")
                 image, guide = train_transforms(image), train_transforms(guide)
                 c, h, w = image.shape
@@ -652,6 +652,7 @@ def main():
             examples["pixel_values"] = images
             examples["guide_values"] = guides
             examples["input_ids"] = tokenize_captions(examples)
+            examples["caption_column"] = text
             return examples
 
         with accelerator.main_process_first():
@@ -666,7 +667,8 @@ def main():
             guide_values = torch.stack([example["guide_values"] for example in examples])
             guide_values = guide_values.to(memory_format=torch.contiguous_format).float()
             input_ids = torch.stack([example["input_ids"] for example in examples])
-            return {"pixel_values": pixel_values, "guide_values": guide_values, "input_ids": input_ids}
+            captions = [example["caption_column"] for example in examples]
+            return {"pixel_values": pixel_values, "guide_values": guide_values, "input_ids": input_ids,"caption":captions}
 
     # DataLoaders creation:
     train_dataloader = torch.utils.data.DataLoader(
@@ -865,6 +867,7 @@ def main():
                                     target = batch["pixel_values"].to(dtype=weight_dtype)
                                     guide = batch["guide_values"].to(accelerator.device)
                                     _ = control_lora(guide).control_states
+                                    args.validation_prompt = batch["caption"]
                                     image = pipeline(
                                         args.validation_prompt, num_inference_steps=30, generator=generator).images[0]
                                     image = dataset_cls.cat_input(image, target, guide)
@@ -925,6 +928,7 @@ def main():
                         target = batch["pixel_values"].to(dtype=weight_dtype)
                         guide = batch["guide_values"].to(accelerator.device)
                         _ = control_lora(guide).control_states
+                        args.validation_prompt = batch["caption"]
                         image = pipeline(args.validation_prompt, num_inference_steps=30, generator=generator).images[0]
                         image = dataset_cls.cat_input(image, target, guide)
                     images.append(image)
