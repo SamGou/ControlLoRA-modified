@@ -690,11 +690,8 @@ def main():
     # Scheduler and math around the number of training steps.
     overrode_max_train_steps = False
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
-    print("\n\n NUM UPDATE STEPS PER EPOCH 1: %s \n\n" % num_update_steps_per_epoch)
-    print("\n\n LEN DATALOADER 1: %s \n\n" % len(train_dataloader))
     if args.max_train_steps is None:
         args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
-        print("\n\n MAX_TRAIN_STEPS 1: %s \n\n" % args.max_train_steps)
         overrode_max_train_steps = True
 
     lr_scheduler = get_scheduler(
@@ -711,14 +708,10 @@ def main():
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
-    print("\n\n NUM UPDATE STEPS PER EPOCH 2: %s \n\n" % num_update_steps_per_epoch)
-    print("\n\n LEN DATALOADER 2: %s \n\n" % len(train_dataloader))
     if overrode_max_train_steps:
         args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
-        print("\n\n MAX_TRAIN_STEPS 2: %s \n\n" % args.max_train_steps)
     # Afterwards we recalculate our number of training epochs
     args.num_train_epochs = math.ceil(args.max_train_steps / num_update_steps_per_epoch)
-    print("\n\n NUM TRAIN EPOCHS: %s \n\n" % args.num_train_epochs)
     # We need to initialize the trackers we use, and also store our configuration.
     # The trackers initializes automatically on the main process.
     if accelerator.is_main_process:
@@ -838,8 +831,7 @@ def main():
 
                         if args.validation_prompt is not None:
                             logger.info(
-                                f"Running sampling... \n Generating {args.num_validation_images} images with prompt:"
-                                f" {args.validation_prompt}."
+                                f"Running sampling... \n Generating {args.num_validation_images} images"
                             )
                             # create pipeline
                             pipeline = DiffusionPipeline.from_pretrained(
@@ -857,6 +849,7 @@ def main():
                             # run inference
                             generator = torch.Generator(device=accelerator.device).manual_seed(args.seed)
                             images = []
+                            captions = []
                             for _ in range(args.num_validation_images):
                                 with torch.no_grad():
                                     try:
@@ -867,11 +860,12 @@ def main():
                                     target = batch["pixel_values"].to(dtype=weight_dtype)
                                     guide = batch["guide_values"].to(accelerator.device)
                                     _ = control_lora(guide).control_states
-                                    args.validation_prompt = batch["caption"]
+                                    args.validation_prompt = batch["caption"][0]
                                     image = pipeline(
                                         args.validation_prompt, num_inference_steps=30, generator=generator).images[0]
                                     image = dataset_cls.cat_input(image, target, guide)
                                 images.append(image)
+                                captions.append(args.validation_prompt)
 
                             for tracker in accelerator.trackers:
                                 if tracker.name == "tensorboard":
@@ -881,7 +875,7 @@ def main():
                                     tracker.log(
                                         {
                                             "sampling": [
-                                                wandb.Image(image, caption=f"{i}: {args.validation_prompt}")
+                                                wandb.Image(image, caption=f"{i}: {captions[i]}")
                                                 for i, image in enumerate(images)
                                             ]
                                         }
@@ -899,8 +893,7 @@ def main():
         if accelerator.is_main_process:
             if args.validation_prompt is not None and epoch % args.validation_epochs == 0:
                 logger.info(
-                    f"Running validation... \n Generating {args.num_validation_images} images with prompt:"
-                    f" {args.validation_prompt}."
+                    f"Running validation... \n Generating {args.num_validation_images} images"
                 )
                 # create pipeline
                 pipeline = DiffusionPipeline.from_pretrained(
@@ -918,6 +911,7 @@ def main():
                 # run inference
                 generator = torch.Generator(device=accelerator.device).manual_seed(args.seed)
                 images = []
+                captions = []
                 for _ in range(args.num_validation_images):
                     with torch.no_grad():
                         try:
@@ -928,10 +922,11 @@ def main():
                         target = batch["pixel_values"].to(dtype=weight_dtype)
                         guide = batch["guide_values"].to(accelerator.device)
                         _ = control_lora(guide).control_states
-                        args.validation_prompt = batch["caption"]
+                        args.validation_prompt = batch["caption"][0]
                         image = pipeline(args.validation_prompt, num_inference_steps=30, generator=generator).images[0]
                         image = dataset_cls.cat_input(image, target, guide)
                     images.append(image)
+                    captions.append(args.validation_prompt)
 
                 if accelerator.is_main_process:
                     for tracker in accelerator.trackers:
@@ -942,7 +937,7 @@ def main():
                             tracker.log(
                                 {
                                     "validation": [
-                                        wandb.Image(image, caption=f"{i}: {args.validation_prompt}")
+                                        wandb.Image(image, caption=f"{i}: {captions[i]}")
                                         for i, image in enumerate(images)
                                     ]
                                 }
@@ -1003,6 +998,7 @@ def main():
     # run inference
     generator = torch.Generator(device=accelerator.device).manual_seed(args.seed)
     images = []
+    captions = []
     for _ in range(args.num_validation_images):
         with torch.no_grad():
             try:
@@ -1013,10 +1009,11 @@ def main():
             target = batch["pixel_values"].to(dtype=weight_dtype)
             guide = batch["guide_values"].to(accelerator.device)
             _ = control_lora(guide).control_states
+            args.validation_prompt = batch["caption"][0]
             image = pipeline(args.validation_prompt, num_inference_steps=30, generator=generator).images[0]
             image = dataset_cls.cat_input(image, target, guide)
         images.append(image)
-
+        captions.append(args.validation_prompt)
     if accelerator.is_main_process:
         for tracker in accelerator.trackers:
             if tracker.name == "tensorboard":
@@ -1026,7 +1023,7 @@ def main():
                 tracker.log(
                     {
                         "test": [
-                            wandb.Image(image, caption=f"{i}: {args.validation_prompt}")
+                            wandb.Image(image, caption=f"{i}: {captions[i]}")
                             for i, image in enumerate(images)
                         ]
                     }
