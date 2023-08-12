@@ -633,7 +633,7 @@ def main():
         )
 
         def preprocess_train(examples):
-            images, guides = [], []
+            images, guides, texts = [], [], []
             for image, guide,text in zip(examples[image_column], examples[guide_column],examples[caption_column]):
                 image, guide = image.convert("RGB"), guide.convert("RGB")
                 image, guide = train_transforms(image), train_transforms(guide)
@@ -648,11 +648,12 @@ def main():
                 guide = guide[:,y1:y2,x1:x2]
                 images.append(image)
                 guides.append(guide)
+                texts.append(text)
                 
             examples["pixel_values"] = images
             examples["guide_values"] = guides
             examples["input_ids"] = tokenize_captions(examples)
-            examples["caption_column"] = text
+            examples["caption_column"] = texts
             return examples
 
         with accelerator.main_process_first():
@@ -861,6 +862,7 @@ def main():
                                     guide = batch["guide_values"].to(accelerator.device)
                                     _ = control_lora(guide).control_states
                                     args.validation_prompt = batch["caption"][0]
+                                    print(args.validation_prompt)
                                     image = pipeline(
                                         args.validation_prompt, num_inference_steps=30, generator=generator).images[0]
                                     image = dataset_cls.cat_input(image, target, guide)
@@ -923,6 +925,7 @@ def main():
                         guide = batch["guide_values"].to(accelerator.device)
                         _ = control_lora(guide).control_states
                         args.validation_prompt = batch["caption"][0]
+                        print(args.validation_prompt)
                         image = pipeline(args.validation_prompt, num_inference_steps=30, generator=generator).images[0]
                         image = dataset_cls.cat_input(image, target, guide)
                     images.append(image)
@@ -1010,6 +1013,7 @@ def main():
             guide = batch["guide_values"].to(accelerator.device)
             _ = control_lora(guide).control_states
             args.validation_prompt = batch["caption"][0]
+            print(args.validation_prompt)
             image = pipeline(args.validation_prompt, num_inference_steps=30, generator=generator).images[0]
             image = dataset_cls.cat_input(image, target, guide)
         images.append(image)
