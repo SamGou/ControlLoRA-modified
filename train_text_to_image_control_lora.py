@@ -100,6 +100,11 @@ def parse_args():
         help="Revision of pretrained model identifier from huggingface.co/models.",
     )
     parser.add_argument(
+        "--invert_guide_colour",
+        action="store_true",
+        help="Invert the sketch guide colour.",
+    )
+    parser.add_argument(
         "--dataset_name",
         type=str,
         default=None,
@@ -314,7 +319,7 @@ def parse_args():
     parser.add_argument(
         "--enable_xformers_memory_efficient_attention", action="store_true", help="Whether or not to use xformers."
     )
-    parser.add_argument("--control_lora_config", type=str,default=None ,required=True, help="Config file of ControlLora")
+    parser.add_argument("--control_lora_config", type=str,default=None, help="Config file of ControlLora")
     parser.add_argument(
         "--control_lora_pretrained",
         type=str,
@@ -353,6 +358,9 @@ DATASET_NAME_MAPPING = {
 
 def main():
     args = parse_args()
+    if args.invert_guide_colour:
+      import PIL
+      import PIL.ImageOps as imops
     logging_dir = os.path.join(args.output_dir, args.logging_dir)
 
     accelerator = Accelerator(
@@ -438,7 +446,7 @@ def main():
     #load pre-trained lora model or new one with config
     if args.control_lora_pretrained is not None:
         print("LOADING PRE TRAINED CONTROLORA %s " % args.control_lora_pretrained)
-        control_lora = ControlLoRA.from_pretrained('HighCWu/ControlLoRA', subfolder="sd-danbooru-sketch-model-control-lora")
+        control_lora = ControlLoRA.from_pretrained('HighCWu/ControlLoRA', subfolder="sd-diffusiondb-canny-model-control-lora")
     elif args.control_lora_config is not None:
         print("LOADING CONTROLORA CONFIG %s " % args.control_lora_config)
         control_lora = ControlLoRA.from_config(args.control_lora_config)
@@ -653,6 +661,8 @@ def main():
             images, guides, texts = [], [], []
             for image, guide,text in zip(examples[image_column], examples[guide_column],examples[caption_column]):
                 image, guide = image.convert("RGB"), guide.convert("RGB")
+                if args.invert_guide_colour:
+                  guide = imops.invert(guide)
                 image, guide = train_transforms(image), train_transforms(guide)
                 c, h, w = image.shape
                 y1, x1 = 0, 0
@@ -880,8 +890,9 @@ def main():
                                     _ = control_lora(guide).control_states
                                     args.validation_prompt = batch["caption"][0]
                                     print(args.validation_prompt)
-                                    image = pipeline(
-                                        args.validation_prompt, num_inference_steps=30, generator=generator).images[0]
+                                    image = pipeline(args.validation_prompt+', best quality, extremely detailed', 
+                                    num_inference_steps=30, generator=generator, 
+                                    negative_prompt="longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality").images[0]
                                     image = dataset_cls.cat_input(image, target, guide)
                                 images.append(image)
                                 captions.append(args.validation_prompt)
@@ -943,7 +954,9 @@ def main():
                         _ = control_lora(guide).control_states
                         args.validation_prompt = batch["caption"][0]
                         print(args.validation_prompt)
-                        image = pipeline(args.validation_prompt, num_inference_steps=30, generator=generator).images[0]
+                        image = pipeline(args.validation_prompt+', best quality, extremely detailed', 
+                          num_inference_steps=30, generator=generator, 
+                          negative_prompt="longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality").images[0]
                         image = dataset_cls.cat_input(image, target, guide)
                     images.append(image)
                     captions.append(args.validation_prompt)
@@ -1031,7 +1044,9 @@ def main():
             _ = control_lora(guide).control_states
             args.validation_prompt = batch["caption"][0]
             print(args.validation_prompt)
-            image = pipeline(args.validation_prompt, num_inference_steps=30, generator=generator).images[0]
+            image = pipeline(args.validation_prompt+', best quality, extremely detailed', 
+            num_inference_steps=30, generator=generator, 
+            negative_prompt="longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality").images[0]
             image = dataset_cls.cat_input(image, target, guide)
         images.append(image)
         captions.append(args.validation_prompt)
