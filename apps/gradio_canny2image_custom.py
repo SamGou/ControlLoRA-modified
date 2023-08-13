@@ -87,7 +87,7 @@ def process(input_image, prompt, a_prompt, n_prompt, num_samples, image_resoluti
             images.append(np.asarray(image))
 
         results = images
-    return [255 - img] + results
+    return [img] + results
 
 
 block = gr.Blocks().queue()

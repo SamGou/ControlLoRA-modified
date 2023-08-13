@@ -30,6 +30,7 @@ from huggingface_hub import HfFolder, Repository, create_repo, whoami
 from torchvision import transforms
 from tqdm.auto import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer
+import sys
 
 import diffusers
 from diffusers import (
@@ -313,8 +314,14 @@ def parse_args():
     parser.add_argument(
         "--enable_xformers_memory_efficient_attention", action="store_true", help="Whether or not to use xformers."
     )
-    parser.add_argument("--control_lora_config", type=str, required=True, help="Config file of ControlLora")
-
+    parser.add_argument("--control_lora_config", type=str,default=None ,required=True, help="Config file of ControlLora")
+    parser.add_argument(
+        "--control_lora_pretrained",
+        type=str,
+        default=None,
+        required=True,
+        help="Path to pretrained controlora model or model identifier from huggingface.co/models.",
+    )
     args = parser.parse_args()
     env_local_rank = int(os.environ.get("LOCAL_RANK", -1))
     if env_local_rank != -1 and env_local_rank != args.local_rank:
@@ -428,7 +435,17 @@ def main():
         cross_attention_dims[control_id].append(cross_attention_dim)
     cross_attention_dims = tuple([cross_attention_dims[control_id] for control_id in control_ids])
 
-    control_lora = ControlLoRA.from_config(args.control_lora_config)
+    #load pre-trained lora model or new one with config
+    if args.control_lora_pretrained is not None:
+        print("LOADING PRE TRAINED CONTROLORA %s " % args.control_lora_pretrained)
+        control_lora = ControlLoRA.from_pretrained('HighCWu/ControlLoRA', subfolder="sd-danbooru-sketch-model-control-lora")
+    elif args.control_lora_config is not None:
+        print("LOADING CONTROLORA CONFIG %s " % args.control_lora_config)
+        control_lora = ControlLoRA.from_config(args.control_lora_config)
+    else:
+        print("YOU NEED TO LOAD EITHER A PRETRAINED LORA MODEL OR GIVE A CONFIG")
+        raise ValueError("YOU NEED TO GIVE EITHER PRETRAINED MODEL PATH OR CONFIG")
+        
 
     # freeze parameters of models to save more memory
     unet.requires_grad_(False)
